@@ -66,7 +66,8 @@ my_stops<-full_join(stop_words, my_stops)
 freetext <- rawtext %>% 
   unnest_tokens(word, text) %>%
   mutate (lemma = (lemmatize_strings(word))) %>%
-  anti_join(my_stops)
+  anti_join(my_stops) %>% 
+  filter(str_detect(word, '[^0-9]'))
 
 
 # What words do we see most often in these collections?
@@ -115,7 +116,28 @@ freetf %>%
   ungroup()  %>% 
   ggplot(aes(lemma, tf_idf, fill = lemma)) +
   geom_col(show.legend = FALSE) +
-  labs (x = NULL, y = "Term Frequency - Inverse Document (Question) Frequency") +
+  labs (x = NULL, y = "Term Frequency - Inverse Document (Question) Frequency",
+        title = "Relative uniqueness of a term's frequency in each collection") +
   facet_wrap(~collection, nrow = 3, scales = "free") +
   theme_classic() +
-  coord_flip()
+  coord_flip() 
+
+
+
+
+# Sentiment analysis
+
+
+freetext %>% 
+  inner_join(get_sentiments("bing")) %>%
+  count(collection, lemma, sentiment, sort = TRUE) %>%
+  ungroup() %>% 
+  group_by(sentiment) %>%
+  top_n(50) %>%
+  ungroup() %>%
+  mutate(lemma = reorder(lemma, n)) %>%
+  ggplot(aes(n, lemma, fill = sentiment)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~collection + sentiment, scales = "free_y", nrow = 3) +
+  labs(x = "Contribution to sentiment",
+       y = NULL)
