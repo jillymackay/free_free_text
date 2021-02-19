@@ -7,6 +7,22 @@ library(textstem)
 library(ggwordcloud)
 library(gutenbergr)
 
+
+# This function allows for quick calculation of Term Frequency - Inverse Document Frequency
+lazytf <- function (data, word = "word", grouping_factor) {
+  qgv <- enquo (grouping_factor)
+  word <- enquo (word)
+  data %>%
+    group_by(!!qgv) %>%
+    count (!!qgv, !!word, sort = TRUE) %>%
+    ungroup() %>%
+    mutate (total = sum(n)) %>%
+    bind_tf_idf (., !!word, !!qgv, n)
+  
+}
+
+
+
 # Want to analyse some essays on education:
 gutenberg_metadata %>%
   filter(gutenberg_id == "36774")
@@ -31,9 +47,11 @@ rawtext <-RCurl::getURL("http://www.gutenberg.org/cache/epub/36774/pg36774.txt")
   unnest(text) %>% 
   mutate(text = strsplit(as.character(text), "PAPERS BY ALICE FREEMAN PALMER")) %>% 
   unnest(text) %>% 
-  mutate(collection = c("prelim", "prelim", "prelim", "prelim", "PROBLEMS OF SCHOOL AND COLLEGE",
-                        "HARVARD PAPERS", "PAPERS BY ALICE FREEMAN PALMER")) %>% 
-  filter(!collection == "prelim")
+  mutate(text = strsplit(as.character(text), "The Riverside Press")) %>% 
+  unnest(text) %>% 
+  mutate(collection = c("prelim", "prelim", "prelim", "prelim", "prelim", "PROBLEMS OF SCHOOL AND COLLEGE",
+                        "HARVARD PAPERS", "PAPERS BY ALICE FREEMAN PALMER", "prelim")) %>% 
+  filter(!collection == "prelim") 
 
 
 my_stops <- tibble(word = c("gutenberg", "project"),
@@ -51,28 +69,23 @@ freetext <- rawtext %>%
   anti_join(my_stops)
 
 
-
-freetext %>% 
-  group_by(collection, lemma) %>% 
-  summarise(n=n()) %>% 
-  group_by(collection) %>% 
-  summarise(total = sum(n))
-
-freetext %>% 
-  group_by(collection) %>% 
-  mutate(coll_total = n()) %>% 
-  ungroup() %>% 
-  group_by(collection, lemma) %>% 
-  summarise(n = n(),
-            perc = (round(100 * n/coll_total, 0))) %>% 
-  View()
-
+# What words do we see most often in these collections?
 
 
 freetext %>% 
-  group_by(collection) %>% 
-  count(lemma)
+  count(lemma, sort = T) %>% 
+  top_n(20) %>% 
+  ggplot(aes(x = reorder(lemma,n), y = n, fill = as.factor(n))) +
+  geom_bar(stat = "identity") +
+  theme_classic() +
+  coord_flip() +
+  labs(y = "Count of Word", x = "Word (Lemmatised)",
+       title = "Frequency of words across\n'The Teacher: Essays and Addresses on Education by Palmer and Palmer'",
+       subtitle = "Words are lemmatised") +
+  theme(legend.position = "none")
 
+
+# Differences between the essay collections?
 
 freetext %>% 
   count(collection, lemma, sort = T) %>% 
@@ -81,21 +94,28 @@ freetext %>%
   geom_bar(stat = "identity") +
   theme_classic() +
   coord_flip() +
-  facet_wrap(facets = ~ collection, scales = "free", nrow = 3)
+  facet_wrap(facets = ~ collection, scales = "free", nrow = 3) +
+  labs(y = "Count of Word", x = "Word (Lemmatised)",
+       title = "Frequency of words across\n'The Teacher: Essays and Addresses on Education by Palmer and Palmer'",
+       subtitle = "Words are lemmatised") +
+  theme(legend.position = "none")
 
 
 
-freetext %>% 
-  group_by(collection) %>% 
-  mutate(coll_total = n()) %>% 
-  ungroup() %>% 
-  group_by(collection, lemma) %>% 
-  summarise(n = n(),
-            perc = (round(100 * n/coll_total, 0))) %>%
-  top_n(20) %>% 
-  ggplot(aes(x = reorder(lemma,perc), y = perc, fill = perc)) +
-  geom_bar(stat = "identity") +
+# What about TF-IDF
+
+freetf <- lazytf(freetext, word = lemma, grouping_factor = collection)
+
+
+freetf %>% 
+  arrange(desc (tf_idf)) %>%
+  mutate (lemma = factor (lemma, levels = rev(unique(lemma)))) %>%
+  group_by (collection) %>%
+  top_n(7, tf_idf) %>%
+  ungroup()  %>% 
+  ggplot(aes(lemma, tf_idf, fill = lemma)) +
+  geom_col(show.legend = FALSE) +
+  labs (x = NULL, y = "Term Frequency - Inverse Document (Question) Frequency") +
+  facet_wrap(~collection, nrow = 3, scales = "free") +
   theme_classic() +
-  coord_flip() +
-  facet_wrap(facets = ~ collection, scales = "free", nrow = 3)
-
+  coord_flip()
