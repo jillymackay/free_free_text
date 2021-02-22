@@ -70,6 +70,25 @@ freetext <- rawtext %>%
   filter(str_detect(word, '[^0-9]'))
 
 
+freen <- rawtext %>% 
+  unnest_tokens(trigram, text, token = "ngrams", n = 3) %>% 
+  mutate (lemma = (lemmatize_strings(trigram))) %>%
+  filter(!str_detect(trigram, 'there')) %>% 
+  filter(!str_detect(trigram, "is the")) %>% 
+  filter(!str_detect(trigram, "it is"))
+
+freen %>% 
+  count(trigram, sort = T) %>% 
+  top_n(20) %>% 
+  ggplot(aes(x = reorder(trigram,n), y = n, fill = as.factor(n))) +
+  geom_bar(stat = "identity") +
+  theme_classic() +
+  coord_flip() +
+  labs(y = "Count of trigrams", x = "trigrams (Lemmatised)",
+       title = "Frequency of trigrams across\n'The Teacher: Essays and Addresses on Education by Palmer and Palmer'",
+       subtitle = "trigrams are lemmatised") +
+  theme(legend.position = "none")
+
 # What words do we see most often in these collections?
 
 
@@ -84,6 +103,8 @@ freetext %>%
        title = "Frequency of words across\n'The Teacher: Essays and Addresses on Education by Palmer and Palmer'",
        subtitle = "Words are lemmatised") +
   theme(legend.position = "none")
+
+
 
 
 # Differences between the essay collections?
@@ -141,3 +162,30 @@ freetext %>%
   facet_wrap(~collection + sentiment, scales = "free_y", nrow = 3) +
   labs(x = "Contribution to sentiment",
        y = NULL)
+
+
+
+
+
+
+freetext %>% 
+  mutate(location = row_number(),
+         word= lemma) %>% 
+  inner_join(get_sentiments("bing")) %>%
+  count(collection, index = location %/% 50, sentiment) %>%
+  spread(sentiment, n, fill = 0) %>%
+  mutate(sentiment = positive - negative) %>% 
+  ggplot(aes(index, sentiment, fill = collection)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~collection, ncol = 1, scales = "free_x")
+
+
+
+
+freetext %>% 
+  mutate(location = row_number(),
+         word = lemma) %>% 
+  inner_join(get_sentiments("afinn")) %>% 
+  ggplot(aes(x = location, y= value, fill = collection))+
+  geom_col(show.legend = FALSE)  +
+  facet_wrap(facets = ~collection, ncol = 1, scales = "free_x")
