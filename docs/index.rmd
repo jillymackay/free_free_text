@@ -1,0 +1,54 @@
+---
+title: "Freeing the Free Text"
+author: "Jill MacKay"
+date: "23/02/2021"
+output: 
+  html_document:
+    highlight: haddock
+    theme: flatly
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+---
+
+
+# About
+This repository holds additional materials for MacKay 2021 'Freeing the Free Text Comment, exploring ethical text mining in the higher education sector', Chapter 14 in 'Analysing Student Feedback in Hihger Educcation: Using Text-Mining to Interpet the Student Voice', edited by Elena Zaitseva, Beatrice Tucker and Elizabeth Santhanam.  
+
+
+
+## Get the data
+In this example I utilise a Public Domain text to demonstrate a repeatable text-mining workflow. 
+
+The text is ["The Teacher: Essays and Addresses on Education by Palmer and Palmer"
+](http://www.gutenberg.org/ebooks/36774). This text can be split into three essay collections, which allows us to make comparisons across the essays.
+
+
+You can obtain the same text, split by collection, using these commands.
+
+
+
+```{r, eval = FALSE}
+
+library(tidyverse)
+
+rawtext <-RCurl::getURL("http://www.gutenberg.org/cache/epub/36774/pg36774.txt") %>% 
+  as.tibble() %>% 
+  rename(text = value) %>% 
+  mutate(text = strsplit(as.character(text), "PROBLEMS OF SCHOOL AND COLLEGE")) %>% 
+  unnest(text) %>% 
+  mutate(text = strsplit(as.character(text), "HARVARD PAPERS")) %>% 
+  unnest(text) %>% 
+  mutate(text = strsplit(as.character(text), "PAPERS BY ALICE FREEMAN PALMER")) %>% 
+  unnest(text) %>% 
+  mutate(text = strsplit(as.character(text), "The Riverside Press")) %>% 
+  unnest(text) %>% 
+  mutate(collection = c("prelim", "prelim", "prelim", "prelim", "prelim", "PROBLEMS OF SCHOOL AND COLLEGE",
+                        "HARVARD PAPERS", "PAPERS BY ALICE FREEMAN PALMER", "prelim")) %>% 
+  filter(!collection == "prelim") 
+
+```
+
+
+
+
