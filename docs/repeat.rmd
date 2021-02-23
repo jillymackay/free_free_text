@@ -66,7 +66,7 @@ lazytf <- function (data, word = "word", grouping_factor) {
 
 
 # Basic data processing
-We have a simple data frame, three 'collections' of free text from [Palmer & Palmer](http://www.gutenberg.org/ebooks/36774) on education. (If you do not have this text you can follow the instructions on how to get it [here](docs/index.html)). 
+We have a simple data frame, three 'collections' of free text from [Palmer & Palmer](http://www.gutenberg.org/ebooks/36774) on education. (If you do not have this text you can follow the instructions on how to get it [here](/index.html)). 
 
 This data is currently called `rawdata` in R, and has two columns:
    * `collection` - which essay collection did the row come from
