@@ -51,5 +51,5 @@ rawtext <-RCurl::getURL("http://www.gutenberg.org/cache/epub/36774/pg36774.txt")
 
 
 # Repeatable workflows    
-You can [go here](free_free_text/repeat.html) to find the repeatable workflow
+You can [go here](/repeat.html) to find the repeatable workflow
 
