@@ -1,7 +1,7 @@
 ---
 title: "Repeatable"
 author: "Jill MacKay"
-date: "23/02/2021"
+date: "`r Sys.Date()`"
 output: 
   html_document:
     highlight: haddock
@@ -29,6 +29,7 @@ rawtext <-RCurl::getURL("http://www.gutenberg.org/cache/epub/36774/pg36774.txt")
   filter(!collection == "prelim") 
 ```
 # About
+This file accompanies MacKay 2021 "Freeing the Free Text Comment". It shows a reproducible and shareable workflow for text mining where the data itself may not be shareable. The sample data I am using is [Palmer & Herbert's The Teacher](http://www.gutenberg.org/ebooks/36774). (Although you can utilise this process on any text, you can follow the [instructions here](index.html) on how to get this specific text). 
 
 
 # Setting up your R Environment
@@ -60,31 +61,39 @@ lazytf <- function (data, word = "word", grouping_factor) {
   
 }
 
-
-
 ```
 
 
-# Basic data processing
-We have a simple data frame, three 'collections' of free text from [Palmer & Palmer](http://www.gutenberg.org/ebooks/36774) on education. (If you do not have this text you can follow the instructions on how to get it [here](index.html)). 
+# Documenting data files
+Our current data frame is a data frame currently called `rawdata`. The data frame has two columns:
 
-This data is currently called `rawdata` in R, and has two columns:
    * `collection` - which essay collection did the row come from
+
    * `text` - the full text of the essay
    
-There are three rows of data, one for each collection.
+The data frame has three rows of data, one for each collection.
    
 This data therefore follows tidy data principles, in that each row is an observation, and each column is a variable. 
 
 We can process this using the `tidytext` package.
 
 
+The following code fully describes (in an automated fashion) how the data is processed ready for text mining. 
+
 ```{r, message = FALSE, warning  = FALSE}
+
+# Create a lexicon of words which should not be considered
+# And append this custom lexicon to the standard 'stop_words' lexicon
 
 my_stops <- tibble(word = c("gutenberg", "project"),
                    lexicon = c("my_stops", "my_stops"))
-my_stops<-full_join(stop_words, my_stops)
+my_stops <- full_join(stop_words, my_stops)
 
+
+# Tokenise the text
+# Run a lemmatisation protocol
+# Remove common words based on custom lexicon
+# Remove any remaining words which are only symbols
 
 freetext <- rawtext %>% 
   unnest_tokens(word, text) %>%
@@ -95,7 +104,7 @@ freetext <- rawtext %>%
 ```
 
 
-# Asking simple questions
+# Documenting all operations
 ## What words are used most frequently?
 
 ```{r, message = FALSE, warning = FALSE, fig.align = "center"}
@@ -109,7 +118,7 @@ freetext %>%
   theme_classic() +
   coord_flip() +
   labs(y = "Count of Word", x = "Word (Lemmatised)",
-       title = "Frequency of words across\n'The Teacher: Essays and Addresses on Education by Palmer and Palmer'",
+       title = "Frequency of words across\n'The Teacher: Essays and Addresses on Education by Palmer and Herbert'",
        subtitle = "Words are lemmatised") +
   theme(legend.position = "none")
 
@@ -130,15 +139,15 @@ freetext %>%
   coord_flip() +
   facet_wrap(facets = ~ collection, scales = "free", nrow = 3) +
   labs(y = "Count of Word", x = "Word (Lemmatised)",
-       title = "Frequency of words across\n'The Teacher: Essays and Addresses on Education by Palmer and Palmer'",
+       title = "Frequency of words across\n'The Teacher: Essays and Addresses on Education by Palmer and Herbert'",
        subtitle = "Words are lemmatised") +
   theme(legend.position = "none")
 
 ```
 
 
-# Are some words more unique in certain collections?
-## Calculating Term Frequency - Inverse Document Frequency (TF-IDF)
+## Are some words more unique in certain collections?
+### Calculating Term Frequency - Inverse Document Frequency (TF-IDF)
 ```{r, message = FALSE, warning = FALSE}
 freetf <- lazytf(freetext, word = lemma, grouping_factor = collection)
 
@@ -146,7 +155,7 @@ freetf <- lazytf(freetext, word = lemma, grouping_factor = collection)
 ```
 
 
-## Visualising TF-IDF
+### Visualising TF-IDF
 ```{r, message = FALSE, warning = FALSE, fig.align = "center"}
 freetf %>% 
   arrange(desc (tf_idf)) %>%
@@ -166,7 +175,7 @@ freetf %>%
 
 
 
-# Are there differences in sentiment across the collections?
+## Are there differences in sentiment across the collections?
 ```{r, message=FALSE, warning = FALSE, fig.align= "center"}
 
 freetext %>% 
@@ -211,3 +220,6 @@ freetext %>%
   facet_wrap(facets = ~collection, ncol = 1, scales = "free_x")
 
 ```
+
+
+
