@@ -144,6 +144,21 @@ freetf %>%
   coord_flip() 
 
 
+# B&W for publication
+freetf %>% 
+  arrange(desc (tf_idf)) %>%
+  mutate (lemma = factor (lemma, levels = rev(unique(lemma)))) %>%
+  group_by (collection) %>%
+  top_n(7, tf_idf) %>%
+  ungroup()  %>% 
+  ggplot(aes(lemma, tf_idf)) +
+  geom_col(show.legend = FALSE) +
+  labs (x = NULL, y = "Term Frequency - Inverse Document (Question) Frequency",
+        title = "Relative uniqueness of a term's frequency in each collection") +
+  facet_wrap(~collection, nrow = 3, scales = "free") +
+  theme_classic() +
+  coord_flip() 
+
 
 
 # Sentiment analysis
